@@ -1,0 +1,63 @@
+# Find zipcodes using latitude and longitude coordinates
+
+# Use sample coordinates and set "returns" to 1 to print out the result to determine the location of the zipcode value in the list
+# The list returned by search.by_coordinates() does not allow strings to be used to select values due to SimpleZipcode()
+coordinates_sample = search.by_coordinates(39.122229, -77.133578, radius=5, returns=1)
+print(coordinates_sample)
+
+
+
+# Create an empty list to append the coordinate values to
+coordinates_list = []
+
+# Zip the columns "start_station_latitude" and "start_station_longitude" to return an iterator of tuples
+# Loop through each value in the columns using lat, lng
+for lat, lng  in zip(df['start_station_latitude'], df['start_station_longitude']):
+    print(lat, lng)
+    # Find the lng, lat paired coordinates using search.by_coordinates() from the uszipcode dependency
+    # Set returns to 0 to return all of the coordinates in the lat,lng columns
+    # Set the radius to 100 to make sure to cover all of the zipcodes included in our database
+    coordinates = search.by_coordinates(lat=lat, lng=lng, radius=100, returns=0)
+    # Append the lat,lng coordinates to coordinates_list
+    coordinates_list.append(coordinates)
+
+
+
+# Use list comprehension to unpack the rest of the values in "result" so you can choose the zipcodes to add to the dataframe
+zipcode = [coordinates_list[i][0].items()[0][1] for i, x in enumerate(coordinates_list)]
+
+# Assign the zipcode values to the zip_code column in the dataframe
+df['zip_code'] = zipcode
+# Preview the first 5 rows of the updated dataframe to confirm that the changes were made properly
+df.head()
+
+
+
+
+# Calculate number of stations in each zip code
+
+# Create a new dataframe with the columns zip_code, start_station_id, and end_station_id. This will be used to calculate the
+# number of stations in each zip code
+station_count_df = df[['zip_code', 'start_station_id', 'end_station_id']]
+# Display the first few rows to confirm that the dataframe was created properly
+station_count_df.head()
+
+
+
+# Set a variable, unique_count, to a groupby() object as a base for calculating the number of stations in each zip code
+# Pass the zip_code column into groupby to count the number of stations grouped by each unique zip code
+# Use .size() to return the total number of elements
+# Use .reset_index() to recalculate the index for each row based upon their position within the new DataFrame. This will
+ # enable simpler referencing of rows in the future
+# Pass the name argument in .reset_index() to assign a name to the column that will hold the values for the number of stations
+ # in each zip code
+unique_count = station_count_df.groupby('zip_code').size().reset_index(name='num_stations_by_zip')
+# Display the dataframe to make sure it was created properly
+unique_count
+
+
+
+# Calculate the length of the station_count_df dataframe and the sum of the values in the num_stations_by_zip to make sure they
+ # match
+print(len(station_count_df))
+print(unique_count['num_stations_by_zip'].sum())
